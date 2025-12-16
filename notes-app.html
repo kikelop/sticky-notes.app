@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+            background: #ffffff;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .header-wrapper {
+            width: 100%;
+            border-bottom: 0.5px solid #e0e0e0;
+        }
+
+        h1 {
+            color: #000;
+            text-align: center;
+            padding: 15px 20px;
+            margin: 0 auto;
+            font-weight: bold;
+            max-width: 1200px;
+            font-size: 18px;
+        }
+
+        .notes-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .input-wrapper {
+            width: 100%;
+            border-top: 0.5px solid #e0e0e0;
+            background: white;
+        }
+
+        .input-section {
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .input-section h2 {
+            display: none;
+        }
+
+        .input-wrapper-inner {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 42px;
+            padding: 12px 50px 12px 12px;
+            border: 0.5px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+            resize: none;
+            background: #fafafa;
+            line-height: 1.4;
+            overflow-y: auto;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #666;
+            background: #ffffff;
+        }
+
+        .color-picker-wrapper {
+            position: absolute;
+            right: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        .color-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            height: 30px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid #999;
+            transition: all 0.2s ease;
+            background-clip: padding-box;
+            position: absolute;
+            bottom: 0;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #000;
+            z-index: 1;
+        }
+
+        .color-picker:not(.expanded) .color-option:not(.selected) {
+            display: none;
+        }
+
+        .color-picker.expanded .color-option:nth-child(1) {
+            bottom: 0;
+        }
+
+        .color-picker.expanded .color-option:nth-child(2) {
+            bottom: 34px;
+        }
+
+        .color-picker.expanded .color-option:nth-child(3) {
+            bottom: 68px;
+        }
+
+        .color-picker.expanded .color-option:nth-child(4) {
+            bottom: 102px;
+        }
+
+        .color-picker.expanded .color-option:nth-child(5) {
+            bottom: 136px;
+        }
+
+        button {
+            background: #e0e0e0;
+            color: #000;
+            border: 0.5px solid #999;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: #ccc;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+            grid-auto-rows: max-content;
+        }
+
+        .note {
+            background: #ffd54f;
+            padding: 16px;
+            border-radius: 5px;
+            border: 0.5px solid rgba(0, 0, 0, 0.05);
+            min-height: 180px;
+            position: relative;
+            transform: rotate(-1deg);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.3s ease,
+                        box-shadow 0.3s ease;
+            word-wrap: break-word;
+            cursor: move;
+        }
+
+        .note:nth-child(even) {
+            transform: rotate(1deg);
+        }
+
+        .note:hover {
+            transform: rotate(0deg) scale(1.01);
+            z-index: 10;
+        }
+
+        .note.dragging {
+            opacity: 0.4;
+            transform: rotate(0deg) scale(1.08);
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .note.drag-over {
+            transform: rotate(0deg) scale(0.92);
+            box-shadow: inset 0 0 0 3px #666;
+        }
+
+        .note.just-dropped {
+            animation: dropPulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes dropPulse {
+            0% {
+                transform: rotate(0deg) scale(1.1);
+                box-shadow: 0 0 0 0 rgba(102, 102, 102, 0.7);
+            }
+            50% {
+                transform: rotate(0deg) scale(1.05);
+                box-shadow: 0 0 0 10px rgba(102, 102, 102, 0);
+            }
+            100% {
+                transform: rotate(-1deg) scale(1);
+                box-shadow: 0 0 0 0 rgba(102, 102, 102, 0);
+            }
+        }
+
+        .note:nth-child(even).just-dropped {
+            animation: dropPulseEven 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes dropPulseEven {
+            0% {
+                transform: rotate(0deg) scale(1.1);
+                box-shadow: 0 0 0 0 rgba(102, 102, 102, 0.7);
+            }
+            50% {
+                transform: rotate(0deg) scale(1.05);
+                box-shadow: 0 0 0 10px rgba(102, 102, 102, 0);
+            }
+            100% {
+                transform: rotate(1deg) scale(1);
+                box-shadow: 0 0 0 0 rgba(102, 102, 102, 0);
+            }
+        }
+
+        .note-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #000;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+        }
+
+        .note-date {
+            font-size: 11px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #000;
+            border: 0.5px solid #999;
+            width: 24px;
+            height: 24px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0;
+            transition: background 0.2s;
+            font-family: monospace;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            color: #000;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .empty-state p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-wrapper">
+            <h1>Sticky Notes</h1>
+        </div>
+
+        <div class="notes-content">
+            <div id="notesContainer" class="notes-grid"></div>
+        </div>
+
+        <div class="input-wrapper">
+            <div class="input-section">
+                <h2>Create a New Note</h2>
+                <div class="input-wrapper-inner">
+                    <textarea id="noteInput" placeholder="Write a note..."></textarea>
+                    <div class="color-picker-wrapper">
+                        <div class="color-picker" id="colorPicker">
+                            <div class="color-option selected" data-color="#ffe680" style="background: #ffe680;" title="Yellow"></div>
+                            <div class="color-option" data-color="#a8d5ff" style="background: #a8d5ff;" title="Blue"></div>
+                            <div class="color-option" data-color="#b3e6b3" style="background: #b3e6b3;" title="Green"></div>
+                            <div class="color-option" data-color="#ffb3b3" style="background: #ffb3b3;" title="Red"></div>
+                            <div class="color-option" data-color="#d9b3e6" style="background: #d9b3e6;" title="Purple"></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="saveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let notes = [];
+        let selectedColor = '#ffe680';
+
+        // Load notes from localStorage
+        function loadNotes() {
+            const savedNotes = localStorage.getItem('stickyNotes');
+            if (savedNotes) {
+                notes = JSON.parse(savedNotes);
+                displayNotes();
+            }
+        }
+
+        // Save notes to localStorage
+        function saveNotes() {
+            localStorage.setItem('stickyNotes', JSON.stringify(notes));
+        }
+
+        // Display all notes
+        function displayNotes() {
+            const container = document.getElementById('notesContainer');
+
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No notes yet!</p>
+                        <p>Create your first sticky note below 👇</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notes.map((note, index) => `
+                <div class="note" style="background: ${note.color};" draggable="true" data-index="${index}">
+                    <button class="delete-btn" onclick="deleteNote(${index})">×</button>
+                    <div class="note-content">${escapeHtml(note.content)}</div>
+                    <div class="note-date">${note.date}</div>
+                </div>
+            `).join('');
+
+            // Add drag and drop event listeners
+            initializeDragAndDrop();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Create a new note
+        function createNote() {
+            const input = document.getElementById('noteInput');
+            const content = input.value.trim();
+
+            if (!content) {
+                alert('Please write something in your note!');
+                return;
+            }
+
+            const note = {
+                content: content,
+                color: selectedColor,
+                date: new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                id: Date.now()
+            };
+
+            notes.unshift(note);
+            saveNotes();
+            displayNotes();
+            input.value = '';
+        }
+
+        // Delete a note
+        function deleteNote(index) {
+            if (confirm('Are you sure you want to delete this note?')) {
+                notes.splice(index, 1);
+                saveNotes();
+                displayNotes();
+            }
+        }
+
+        // Drag and drop functionality
+        let draggedIndex = null;
+
+        function initializeDragAndDrop() {
+            const noteElements = document.querySelectorAll('.note');
+
+            noteElements.forEach((note, index) => {
+                note.addEventListener('dragstart', handleDragStart);
+                note.addEventListener('dragend', handleDragEnd);
+                note.addEventListener('dragover', handleDragOver);
+                note.addEventListener('drop', handleDrop);
+                note.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            // Don't allow dragging if clicking delete button
+            if (e.target.classList.contains('delete-btn')) {
+                e.preventDefault();
+                return;
+            }
+
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+
+            // Remove drag-over class from all notes
+            document.querySelectorAll('.note').forEach(note => {
+                note.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            this.classList.add('drag-over');
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            e.preventDefault();
+
+            const dropIndex = parseInt(this.dataset.index);
+
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                // Reorder the notes array
+                const draggedNote = notes[draggedIndex];
+                notes.splice(draggedIndex, 1);
+                notes.splice(dropIndex, 0, draggedNote);
+
+                saveNotes();
+                displayNotes();
+
+                // Add pulse animation to the dropped note
+                setTimeout(() => {
+                    const droppedNote = document.querySelectorAll('.note')[dropIndex];
+                    if (droppedNote) {
+                        droppedNote.classList.add('just-dropped');
+                        setTimeout(() => {
+                            droppedNote.classList.remove('just-dropped');
+                        }, 500);
+                    }
+                }, 50);
+            }
+
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        // Color picker functionality
+        const colorPicker = document.getElementById('colorPicker');
+        const colorOptions = document.querySelectorAll('.color-option');
+
+        colorPicker.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            if (e.target.classList.contains('color-option')) {
+                // A color option was clicked
+                if (!e.target.classList.contains('selected')) {
+                    // Different color was clicked - select it and collapse
+                    colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedColor = e.target.dataset.color;
+                    colorPicker.classList.remove('expanded');
+                } else {
+                    // Selected color was clicked - toggle expanded state
+                    colorPicker.classList.toggle('expanded');
+                }
+            } else {
+                // Clicked on the picker container (padding/background) - toggle
+                colorPicker.classList.toggle('expanded');
+            }
+        });
+
+        // Close color picker when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!colorPicker.contains(e.target)) {
+                colorPicker.classList.remove('expanded');
+            }
+        });
+
+        // Save button
+        document.getElementById('saveBtn').addEventListener('click', createNote);
+
+        // Allow Enter to save
+        document.getElementById('noteInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createNote();
+            }
+        });
+
+        // Load notes on page load
+        loadNotes();
+    </script>
+</body>
+</html>
