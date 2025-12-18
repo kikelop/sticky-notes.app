@@ -38,9 +38,11 @@
             text-align: center;
             padding: 15px 20px;
             margin: 0 auto;
-            font-weight: bold;
+            font-weight: 200;
             max-width: 1200px;
-            font-size: 18px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .notes-content {
@@ -82,35 +84,36 @@
 
         textarea {
             width: 100%;
-            height: 42px;
-            padding: 12px 50px 12px 12px;
+            height: 46px;
+            padding: 13px 50px 16px 14px;
             border: 0.5px solid #ccc;
             border-radius: 4px;
             font-size: 14px;
             font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
             resize: none;
-            background: #fafafa;
+            background: transparent;
             color: #000;
             line-height: 1.4;
-            overflow-y: auto;
+            overflow-y: hidden;
         }
 
         textarea:focus {
             outline: none;
             border-color: #666;
-            background: #ffffff;
+            background: transparent;
         }
 
         .color-picker-wrapper {
             position: absolute;
-            right: 24px;
+            top: 8px;
+            right: 39px;
             display: flex;
             align-items: center;
         }
 
         .color-picker {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             cursor: pointer;
             position: relative;
@@ -122,11 +125,11 @@
             height: 30px;
             border-radius: 4px;
             cursor: pointer;
-            border: 2px solid #999;
+            border: 0.5px solid #ccc;
             transition: all 0.2s ease;
             background-clip: padding-box;
             position: absolute;
-            bottom: 0;
+            left: 0;
         }
 
         .color-option:hover {
@@ -143,41 +146,44 @@
         }
 
         .color-picker.expanded .color-option:nth-child(1) {
-            bottom: 0;
+            left: 0;
         }
 
         .color-picker.expanded .color-option:nth-child(2) {
-            bottom: 34px;
+            left: -38px;
         }
 
         .color-picker.expanded .color-option:nth-child(3) {
-            bottom: 68px;
+            left: -76px;
         }
 
         .color-picker.expanded .color-option:nth-child(4) {
-            bottom: 102px;
+            left: -114px;
         }
 
         .color-picker.expanded .color-option:nth-child(5) {
-            bottom: 136px;
+            left: -152px;
         }
 
         button {
             background: #000000;
             color: #ffffff;
             border: 0.5px solid #000;
-            padding: 10px 10px;
-            font-size: 14px;
+            padding: 13px 16px;
+            text-align: center;
+            font-size: 13px;
             border-radius: 4px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, color 0.2s;
             font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
             flex-shrink: 0;
             white-space: nowrap;
+            text-transform: uppercase;
         }
 
         button:hover {
-            background: #1a1a1a;
+            background: #ffffff;
+            color: #000000;
         }
 
         .notes-grid {
@@ -296,10 +302,11 @@
         }
 
         .note-date {
-            font-size: 11px;
+            font-size: 9px;
             color: #555;
             margin-top: auto;
             padding-top: 10px;
+            text-transform: uppercase;
         }
 
         .note.editing .note-date {
@@ -362,15 +369,25 @@
         .empty-state {
             text-align: center;
             color: #666;
-            font-size: 14px;
+            font-size: 16px;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            width: 100%;
+            padding: 0 20px;
         }
 
         .empty-state p {
-            margin-bottom: 10px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .empty-state p:first-child {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #444;
         }
     </style>
 </head>
@@ -430,7 +447,7 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <p>No notes yet!</p>
-                        <p>Create your first sticky note below 👇</p>
+                        <p>Start by writing your first note below</p>
                     </div>
                 `;
                 return;
@@ -480,7 +497,7 @@
                 id: Date.now()
             };
 
-            notes.unshift(note);
+            notes.push(note);
             saveNotes();
             displayNotes();
             input.value = '';
@@ -668,7 +685,13 @@
 
         // Color picker functionality
         const colorPicker = document.getElementById('colorPicker');
+        const colorPickerWrapper = document.querySelector('.color-picker-wrapper');
         const colorOptions = document.querySelectorAll('.color-option');
+
+        // Prevent clicks on wrapper from propagating
+        colorPickerWrapper.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
 
         colorPicker.addEventListener('click', function(e) {
             e.stopPropagation();
